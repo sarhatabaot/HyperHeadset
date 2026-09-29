@@ -243,14 +243,14 @@ fn connect_hid_device() -> Result<Box<dyn Device>, DeviceError> {
             let mut test_device = (entry.factory)(state);
             test_device.init_capabilities();
 
-            let probe_packet = test_device
-                .get_query_packets()
-                .into_iter()
-                .nth(2)
-                .expect("Why is there a device without packets ???");
+            let query_packets = test_device.get_query_packets();
+            let Some(probe_packet) = query_packets.get(2).or_else(|| query_packets.first()) else {
+                debug_println!("Device has no query packets; skipping interface");
+                continue;
+            };
 
             test_device.prepare_write();
-            if let Err(_e) = test_device.write_hid_report(&probe_packet) {
+            if let Err(_e) = test_device.write_hid_report(probe_packet) {
                 debug_println!("Failed to open: {_e:?}");
                 continue;
             } else {
